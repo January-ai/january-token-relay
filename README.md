@@ -5,21 +5,32 @@
 ![Runtime dependencies: 0](https://img.shields.io/badge/runtime%20dependencies-0-blue)
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FJanuary-ai%2Fjanuary-token-relay&env=JANUARY_API_KEY,RELAY_TOKEN&envDescription=JANUARY_API_KEY%3A%20your%20sk-...%20key%20from%20dashboard.january.ai.%20RELAY_TOKEN%3A%20any%20long%20random%20secret%20you%20invent%20-%20your%20app%20sends%20it%20as%20the%20Bearer%20token%20on%20every%20request%20to%20this%20relay.%20Test%20after%20deploy%3A%20curl%20-X%20POST%20https%3A%2F%2FYOUR-PROJECT.vercel.app%2Fapi%2Fjanuary%2Fclient-token%20-H%20'Authorization%3A%20Bearer%20YOUR_RELAY_TOKEN'%20-H%20'x-end-user-id%3A%20demo-user-1'&envLink=https%3A%2F%2Fgithub.com%2FJanuary-ai%2Fjanuary-token-relay%23try-it-from-a-terminal&project-name=january-token-relay&repository-name=january-token-relay)
-*(needs an API key, and [Client tokens enabled](https://dashboard.january.ai) on your account — [full steps below](#deploy))*
 
-**What this is:** your mobile app needs tokens to call the
-[January Developer API](https://docs.january.ai). Tokens are minted with your
-API key — and your API key must never ship inside an app, where anyone can
-extract it. This relay is the missing middle piece **while you build**: a tiny
-service you deploy to Vercel in about a minute, which holds your key and hands
-your app short-lived tokens, so the full token flow works before your own
-backend endpoint exists.
+*(Deploy needs an API key, and Client tokens enabled on your [January Developer Dashboard](https://dashboard.january.ai). [Full steps below](#deploy))*
 
-**Who it's for: development and testing.** You're integrating the January iOS
-or Android SDK and want everything working — local builds, demos, a short
-TestFlight beta — before your backend team builds the real endpoint. **It is
-not a production substitute for your backend:** the relay token proves a
-request came from your app, not *which user* is asking. Before launch, move
+## Introduction
+
+Your mobile app needs to call the
+[January Developer API](https://docs.january.ai). Calls are authorized with an
+API key from the
+[January Developer Dashboard](https://dashboard.january.ai) — and an API key
+must never ship inside an app, where anyone can extract it.
+
+The best practice for mobile apps is short-lived tokens, one per user, minted
+by a **token endpoint on your own backend**:
+
+1. Your app calls a URL on your servers, authorized the same way as every
+   other API in your system — so only your signed-in users can reach it.
+2. That URL holds your January API key, which is safe there: it lives on your
+   server, where clients can't extract it.
+3. It calls January's client-token exchange with your key and the user's id,
+   and passes the short-lived token it gets back to your app. The app then
+   calls January directly with that token until it expires.
+
+**This relay stands in for that URL while you build.** If your backend doesn't
+have the token endpoint yet, deploy this to Vercel in about a minute: it holds
+your key and hands your app short-lived tokens, so the full token flow works
+today — and moves into your backend unchanged when you're ready. Before launch, move
 this endpoint into your backend behind your real user authentication
 ([how below](#going-to-production-move-the-endpoint-into-your-backend)).
 
@@ -78,11 +89,6 @@ indefinitely.
 
 ## Try it from a terminal
 
-(Sanity check first, no headers needed: open `https://<your-project>.vercel.app`
-in a browser — the status page checks the endpoint for you and shows the two
-headers. Neither the page nor a plain GET can mint anything; minting always
-requires the POST below.)
-
 ```bash
 curl -X POST 'https://<your-project>.vercel.app/api/january/client-token' \
   -H 'Authorization: Bearer <your RELAY_TOKEN>' \
@@ -117,6 +123,12 @@ let january = try JanuaryClient(clientTokenProvider: {
 
 The SDK handles caching, proactive refresh, and the retry-once-on-expiry
 contract from there.
+
+The URL itself doesn't matter — any path on any host works, including your own
+backend later. What matters is the **shape**: the app POSTs with its
+credentials, and the response is January's mint response, verbatim. Any
+endpoint honoring that contract is interchangeable with this relay, which is
+why moving to your backend changes one string in your app.
 
 ## What this protects — and what it doesn't
 
@@ -163,21 +175,3 @@ signed-in users can request tokens:
   claims.
 - **Your own sessions** — whatever middleware guards your existing API guards
   this endpoint too; the request's signed-in user is the user you mint for.
-
-Whichever you use, the endpoint performs the same three steps as this relay —
-authenticate the caller, mint with your `sk-` key, relay January's response
-verbatim — with the one upgrade that makes it production-grade: **the user id
-comes from the verified session, never from a request header.** The developer
-dashboard's *Production setup* card has copy-paste versions for Node, Python,
-and Go. Your app then changes only the URL (and stops sending the relay
-token); the SDK behaves identically. Finally, delete the Vercel project and
-rotate the API key it held.
-
----
-
-*January maintainers:* the Deploy button **clones**; clicking it while scoped
-to `January-ai` collides with this source repo ("repository already exists").
-To host January's own instance, use **vercel.com/new → Import Git Repository**
-against this repo instead — imports track pushes to `main`, clones are
-point-in-time copies. And the button only works for customers while this repo
-is public.
