@@ -1,5 +1,9 @@
 # January Token Relay
 
+[![CI](https://github.com/January-ai/january-token-relay/actions/workflows/ci.yml/badge.svg)](https://github.com/January-ai/january-token-relay/actions/workflows/ci.yml)
+![Node ≥ 20](https://img.shields.io/badge/node-%E2%89%A5%2020-brightgreen)
+![Runtime dependencies: 0](https://img.shields.io/badge/runtime%20dependencies-0-blue)
+
 The one backend endpoint a January mobile integration needs, deployed in about
 a minute. Your app trades a **relay token** (a secret you invent) for
 short-lived **client tokens**, and your January API key never ships on a phone
@@ -50,22 +54,6 @@ indefinitely.
 3. That's it. Your endpoint is live at
    `https://<your-project>.vercel.app/api/january/client-token`.
 
-## Point the SDK at it
-
-```swift
-let january = try JanuaryClient(clientTokenProvider: {
-    var request = URLRequest(url: URL(string: "https://<your-project>.vercel.app/api/january/client-token")!)
-    request.httpMethod = "POST"
-    request.setValue("Bearer \(relayToken)", forHTTPHeaderField: "Authorization")
-    request.setValue(currentUserId, forHTTPHeaderField: "x-end-user-id")   // your id for the signed-in user
-    let (data, _) = try await URLSession.shared.data(for: request)
-    return try JSONDecoder().decode(JanuaryClientToken.self, from: data)
-})
-```
-
-The SDK handles caching, proactive refresh, and the retry-once-on-expiry
-contract from there.
-
 ## Try it from a terminal
 
 ```bash
@@ -86,6 +74,22 @@ Then prove the token works:
 curl 'https://partners.january.ai/v1.2/foods?query=greek+yogurt&limit=3' \
   -H 'Authorization: Bearer <the ct-… you just received>'
 ```
+
+## Point the SDK at it
+
+```swift
+let january = try JanuaryClient(clientTokenProvider: {
+    var request = URLRequest(url: URL(string: "https://<your-project>.vercel.app/api/january/client-token")!)
+    request.httpMethod = "POST"
+    request.setValue("Bearer \(relayToken)", forHTTPHeaderField: "Authorization")
+    request.setValue(currentUserId, forHTTPHeaderField: "x-end-user-id")   // your id for the signed-in user
+    let (data, _) = try await URLSession.shared.data(for: request)
+    return try JSONDecoder().decode(JanuaryClientToken.self, from: data)
+})
+```
+
+The SDK handles caching, proactive refresh, and the retry-once-on-expiry
+contract from there.
 
 ## What this protects — and what it doesn't
 
@@ -110,8 +114,12 @@ curl 'https://partners.january.ai/v1.2/foods?query=greek+yogurt&limit=3' \
 ## Local development
 
 ```bash
-npm test          # unit tests, no network, no dependencies
+npm test          # unit + e2e tests (real HTTP against a stubbed upstream), no network
+npm run lint      # Biome — also `npm run format` to auto-fix
 vercel dev        # run the endpoint locally with your .env
+
+# Optional: exercise a deployed relay for real (mints one token)
+RELAY_E2E_URL=https://<your-project>.vercel.app RELAY_E2E_TOKEN=<your token> npm test
 ```
 
 ## Moving off the relay later
