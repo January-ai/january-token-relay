@@ -1,8 +1,8 @@
 {
   "name": "january-token-relay",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "One-file token relay for the January Developer API: exchanges your API key for short-lived client tokens, minted only for users your own login system has verified.",
+  "description": "One-file token relay for the January Developer API: your app trades a relay token for short-lived client tokens, and your API key never ships on a phone.",
   "type": "module",
   "engines": {
     "node": ">=20"
@@ -10,8 +10,5 @@
   "scripts": {
     "test": "node --test",
     "dev": "vercel dev"
-  },
-  "dependencies": {
-    "jose": "^6.0.11"
   }
 }
