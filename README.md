@@ -37,7 +37,7 @@ indefinitely.
 > (developer dashboard → Client tokens → Enable). Minting is refused with a
 > `403` until that toggle is on — the relay will faithfully relay that answer.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FJanuary-ai%2Fjanuary-token-relay&env=JANUARY_API_KEY,RELAY_TOKEN&envDescription=Your%20January%20API%20key%20(sk-...)%20and%20a%20relay%20token%20you%20invent%20(any%20long%20random%20string)&project-name=january-token-relay&repository-name=january-token-relay)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FJanuary-ai%2Fjanuary-token-relay&env=JANUARY_API_KEY,RELAY_TOKEN&envDescription=JANUARY_API_KEY%3A%20your%20sk-...%20key%20from%20dashboard.january.ai.%20RELAY_TOKEN%3A%20any%20long%20random%20secret%20you%20invent%20-%20your%20app%20sends%20it%20as%20the%20Bearer%20token%20on%20every%20request%20to%20this%20relay.%20Test%20after%20deploy%3A%20curl%20-X%20POST%20https%3A%2F%2FYOUR-PROJECT.vercel.app%2Fapi%2Fjanuary%2Fclient-token%20-H%20'Authorization%3A%20Bearer%20YOUR_RELAY_TOKEN'%20-H%20'x-end-user-id%3A%20demo-user-1'&envLink=https%3A%2F%2Fgithub.com%2FJanuary-ai%2Fjanuary-token-relay%23try-it-from-a-terminal&project-name=january-token-relay&repository-name=january-token-relay)
 
 1. Click the button. Vercel asks where to create your copy of this repo —
    pick your GitHub account (the **Create** button stays disabled until you do).
@@ -45,7 +45,8 @@ indefinitely.
    - **`JANUARY_API_KEY`** — mint one in the
      [developer dashboard](https://dashboard.january.ai).
    - **`RELAY_TOKEN`** — a secret you invent. Make it long and random
-     (`openssl rand -base64 32` is perfect).
+     (`openssl rand -base64 32` is perfect). This is the value your app sends
+     as the `Authorization: Bearer` header when it asks the relay for a token.
 3. That's it. Your endpoint is live at
    `https://<your-project>.vercel.app/api/january/client-token`.
 
