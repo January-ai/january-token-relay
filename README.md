@@ -50,7 +50,7 @@ indefinitely.
      [developer dashboard](https://dashboard.january.ai).
    - **`RELAY_TOKEN`** — a secret you invent. Make it long and random
      (`openssl rand -base64 32` is perfect). This is the value your app sends
-     as the `Authorization: Bearer` header when it asks the relay for a token.
+     as the `Authorization: Bearer <RELAY_TOKEN>` header when it asks the relay for a token.
 3. That's it. Your endpoint is live at
    `https://<your-project>.vercel.app/api/january/client-token`.
 
