@@ -111,7 +111,7 @@ test('TOKEN_SCOPES and TOKEN_TTL_SECONDS become relay policy on the mint body', 
   const handler = createRelayHandler({
     env: {
       JANUARY_API_KEY: 'sk-x',
-      TOKEN_SCOPES: 'foods:read, glucose:read',
+      TOKEN_SCOPES: 'foods:read, glucose:read,',
       TOKEN_TTL_SECONDS: '900',
     },
     verify: async () => ({ endUserId: 'user-1' }),
@@ -177,6 +177,23 @@ test('an unreachable upstream is a 502, not a hang or a crash', async () => {
   assert.equal(res.body.error, 'upstream_unreachable')
 })
 
+test('GET answers with usage and never touches the upstream — a browser visit cannot mint', async () => {
+  const handler = createRelayHandler({
+    env: { JANUARY_API_KEY: 'sk-x' },
+    verify: async () => ({ endUserId: 'user-1' }),
+    fetchImpl: async () => {
+      throw new Error('GET must never call January')
+    },
+  })
+  const res = fakeRes()
+  await handler({ method: 'GET', headers: {} }, res)
+
+  assert.equal(res.statusCode, 200)
+  assert.equal(res.body.status, 'ok')
+  assert.match(res.body.usage, /Authorization: Bearer/)
+  assert.match(res.body.usage, /x-end-user-id/)
+})
+
 test('non-POST methods are refused; OPTIONS preflight succeeds for an allowed origin', async () => {
   const handler = createRelayHandler({
     env: { JANUARY_API_KEY: 'sk-x', ALLOWED_ORIGINS: 'https://app.test' },
@@ -184,9 +201,9 @@ test('non-POST methods are refused; OPTIONS preflight succeeds for an allowed or
     fetchImpl: januaryRespondsWith(201, MINTED),
   })
 
-  const get = fakeRes()
-  await handler({ method: 'GET', headers: {} }, get)
-  assert.equal(get.statusCode, 405)
+  const put = fakeRes()
+  await handler({ method: 'PUT', headers: {} }, put)
+  assert.equal(put.statusCode, 405)
 
   const preflight = fakeRes()
   await handler({ method: 'OPTIONS', headers: { origin: 'https://app.test' } }, preflight)
@@ -198,15 +215,17 @@ test('non-POST methods are refused; OPTIONS preflight succeeds for an allowed or
   assert.equal(stranger.headers['Access-Control-Allow-Origin'], undefined)
 })
 
-test('a missing API key is a clear misconfiguration answer', async () => {
+test('a missing API key is a clear misconfiguration answer — on GET too, so the health check cannot lie', async () => {
   const handler = createRelayHandler({
     env: {},
     verify: async () => ({ endUserId: 'user-1' }),
     fetchImpl: januaryRespondsWith(201, MINTED),
   })
-  const res = fakeRes()
-  await handler({ method: 'POST', headers: {} }, res)
 
-  assert.equal(res.statusCode, 500)
-  assert.equal(res.body.error, 'relay_misconfigured')
+  for (const method of ['POST', 'GET']) {
+    const res = fakeRes()
+    await handler({ method, headers: {} }, res)
+    assert.equal(res.statusCode, 500, `${method} should surface the misconfiguration`)
+    assert.equal(res.body.error, 'relay_misconfigured')
+  }
 })
