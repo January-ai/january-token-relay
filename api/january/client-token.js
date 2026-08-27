@@ -20,6 +20,8 @@ export default async function clientToken(req, res) {
     return await ensureHandler()(req, res)
   } catch (error) {
     console.error('relay error:', error?.message)
-    return res.status(500).json({ error: 'relay_misconfigured', message: error?.message ?? 'Unexpected relay error.' })
+    return res
+      .status(500)
+      .json({ error: 'relay_misconfigured', message: error?.message ?? 'Unexpected relay error.' })
   }
 }

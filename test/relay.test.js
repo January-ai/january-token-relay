@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { buildVerifier, SessionError } from '../lib/verify.js'
 import { createRelayHandler } from '../lib/relay.js'
+import { buildVerifier, SessionError } from '../lib/verify.js'
 
 // ——— helpers ————————————————————————————————————————————————————————————————
 
@@ -109,7 +109,11 @@ test('a verified caller mints for exactly the named user and relays the 201 verb
 test('TOKEN_SCOPES and TOKEN_TTL_SECONDS become relay policy on the mint body', async () => {
   const capture = {}
   const handler = createRelayHandler({
-    env: { JANUARY_API_KEY: 'sk-x', TOKEN_SCOPES: 'foods:read, glucose:read', TOKEN_TTL_SECONDS: '900' },
+    env: {
+      JANUARY_API_KEY: 'sk-x',
+      TOKEN_SCOPES: 'foods:read, glucose:read',
+      TOKEN_TTL_SECONDS: '900',
+    },
     verify: async () => ({ endUserId: 'user-1' }),
     fetchImpl: januaryRespondsWith(201, MINTED, capture),
   })
@@ -142,7 +146,10 @@ test('a failed check is the relay’s own 401 and January is never called', asyn
 })
 
 test('January’s refusals pass through untouched — status, code and message', async () => {
-  const refusal = { message: 'Client tokens are not enabled for this account yet.', code: 'forbidden' }
+  const refusal = {
+    message: 'Client tokens are not enabled for this account yet.',
+    code: 'forbidden',
+  }
   const handler = createRelayHandler({
     env: { JANUARY_API_KEY: 'sk-x' },
     verify: async () => ({ endUserId: 'user-1' }),
