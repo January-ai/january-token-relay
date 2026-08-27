@@ -4,6 +4,9 @@
 ![Node ≥ 20](https://img.shields.io/badge/node-%E2%89%A5%2020-brightgreen)
 ![Runtime dependencies: 0](https://img.shields.io/badge/runtime%20dependencies-0-blue)
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FJanuary-ai%2Fjanuary-token-relay&env=JANUARY_API_KEY,RELAY_TOKEN&envDescription=JANUARY_API_KEY%3A%20your%20sk-...%20key%20from%20dashboard.january.ai.%20RELAY_TOKEN%3A%20any%20long%20random%20secret%20you%20invent%20-%20your%20app%20sends%20it%20as%20the%20Bearer%20token%20on%20every%20request%20to%20this%20relay.%20Test%20after%20deploy%3A%20curl%20-X%20POST%20https%3A%2F%2FYOUR-PROJECT.vercel.app%2Fapi%2Fjanuary%2Fclient-token%20-H%20'Authorization%3A%20Bearer%20YOUR_RELAY_TOKEN'%20-H%20'x-end-user-id%3A%20demo-user-1'&envLink=https%3A%2F%2Fgithub.com%2FJanuary-ai%2Fjanuary-token-relay%23try-it-from-a-terminal&project-name=january-token-relay&repository-name=january-token-relay)
+*(needs an API key, and [Client tokens enabled](https://dashboard.january.ai) on your account — [full steps below](#deploy))*
+
 **What this is:** your mobile app needs tokens to call the
 [January Developer API](https://docs.january.ai). Tokens are minted with your
 API key — and your API key must never ship inside an app, where anyone can

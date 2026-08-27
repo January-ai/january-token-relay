@@ -177,11 +177,13 @@ test('an unreachable upstream is a 502, not a hang or a crash', async () => {
   assert.equal(res.body.error, 'upstream_unreachable')
 })
 
-test('GET answers with usage — a browser visit is a question, not a mistake', async () => {
+test('GET answers with usage and never touches the upstream — a browser visit cannot mint', async () => {
   const handler = createRelayHandler({
     env: { JANUARY_API_KEY: 'sk-x' },
     verify: async () => ({ endUserId: 'user-1' }),
-    fetchImpl: januaryRespondsWith(201, MINTED),
+    fetchImpl: async () => {
+      throw new Error('GET must never call January')
+    },
   })
   const res = fakeRes()
   await handler({ method: 'GET', headers: {} }, res)
