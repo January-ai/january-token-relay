@@ -5,28 +5,68 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>January Token Relay</title>
 <style>
-  body { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; max-width: 42rem;
-         margin: 4rem auto; padding: 0 1rem; line-height: 1.6; color: #1a1a1a; background: #faf9f5; }
+  body { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; max-width: 46rem;
+         margin: 3.5rem auto 4rem; padding: 0 1rem; line-height: 1.6; color: #1a1a1a; background: #faf9f5; }
+  h1 { margin-bottom: 0.5rem; }
+  h2 { font-size: 1rem; margin: 2rem 0 0.5rem; }
   .ok { color: #0a7d33; font-weight: bold; }
   .bad { color: #b3261e; font-weight: bold; }
-  code { background: #edebe3; padding: 2px 6px; }
-  a { color: inherit; }
+  .block { position: relative; background: #15181b; padding: 0.9rem 5.5rem 0.9rem 1rem; }
+  .block pre { margin: 0; overflow-x: auto; }
+  .block code { color: #e8e6e1; font-size: 0.85rem; }
+  .copy { position: absolute; top: 0.5rem; right: 0.5rem; font: inherit; font-size: 0.75rem;
+          background: #faf9f5; color: #1a1a1a; border: 1px solid #1a1a1a; padding: 0.25rem 0.6rem; cursor: pointer; }
+  .hint { font-size: 0.85rem; color: #5f5c55; margin-top: 0.4rem; }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #d8d5cc; font-size: 0.9rem; }
+  footer a, p a { color: inherit; }
 </style>
 </head>
 <body>
 <h1>January Token Relay</h1>
 <p>Status: <span id="status">checking…</span></p>
-<p>
-  Endpoint: <code>POST /api/january/client-token</code><br>
-  Headers: <code>Authorization: Bearer &lt;your RELAY_TOKEN&gt;</code> and
-  <code>x-end-user-id: &lt;your id for the user&gt;</code>
-</p>
-<p>
-  This relay is for development and testing — before launch, move the endpoint
-  into your backend. Setup, test commands, and the production guide are in the
-  <a href="https://github.com/January-ai/january-token-relay">README</a>.
-</p>
+<p>This relay is for development and testing — before launch, move the endpoint
+into your backend. See the
+<a href="https://github.com/January-ai/january-token-relay">README</a>.</p>
+
+<h2>1&nbsp;·&nbsp;Mint a client token</h2>
+<div class="block"><button type="button" class="copy" data-copy="mint">Copy</button><pre><code id="mint">curl -X POST 'https://&lt;your-project&gt;.vercel.app/api/january/client-token' \
+  -H 'Authorization: Bearer &lt;your RELAY_TOKEN&gt;' \
+  -H 'x-end-user-id: demo-user-1'</code></pre></div>
+<p class="hint">Replace <b>&lt;your RELAY_TOKEN&gt;</b> with the relay token you set at deploy.
+The user id can be anything — the token is minted for that user.</p>
+
+<h2>2&nbsp;·&nbsp;Use it — search for greek yogurt</h2>
+<div class="block"><button type="button" class="copy" data-copy="use">Copy</button><pre><code id="use">curl 'https://partners.january.ai/v1.2/foods?query=greek+yogurt&amp;limit=3' \
+  -H 'Authorization: Bearer &lt;ct-token from step 1&gt;'</code></pre></div>
+<p class="hint">Paste the <b>ct-…</b> value from step 1. Tokens expire after ~30 minutes —
+just mint another.</p>
+
+<footer>
+  <a href="https://github.com/January-ai/january-token-relay">GitHub</a> ·
+  <a href="https://dashboard.january.ai">Developer Dashboard</a> ·
+  <a href="https://docs.january.ai">API Docs</a><br>
+  Questions? <a href="https://discord.gg/cYQeh3UnC">Join our Discord</a>
+</footer>
+
 <script>
+  // The curl commands above work without JavaScript. When the page is served
+  // from its real deployment, upgrade the placeholder host to the actual one.
+  if (location.origin.startsWith('http')) {
+    const mint = document.getElementById('mint')
+    mint.textContent = mint.textContent.replace('https://<your-project>.vercel.app', location.origin)
+  }
+
+  for (const button of document.querySelectorAll('.copy')) {
+    button.addEventListener('click', async () => {
+      try {
+        const code = document.getElementById(button.dataset.copy)
+        await navigator.clipboard.writeText(code.textContent)
+        button.textContent = 'Copied'
+        setTimeout(() => { button.textContent = 'Copy' }, 1500)
+      } catch { /* clipboard unavailable; the text stays selectable */ }
+    })
+  }
+
   fetch('/api/january/client-token')
     .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
     .then(() => {
