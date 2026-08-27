@@ -1,7 +1,5 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { SignJWT } from 'jose'
-import { resolveConfig, RelayConfigError } from '../lib/providers.js'
 import { buildVerifier, SessionError } from '../lib/verify.js'
 import { createRelayHandler } from '../lib/relay.js'
 
@@ -32,27 +30,6 @@ function fakeRes() {
   return res
 }
 
-const SECRET = 'test-secret-test-secret-test-secret!'
-
-async function hs256Session(claims, { issuer = 'https://issuer.test/auth/v1', audience = 'authenticated' } = {}) {
-  return new SignJWT(claims)
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuer(issuer)
-    .setAudience(audience)
-    .setExpirationTime('5m')
-    .sign(new TextEncoder().encode(SECRET))
-}
-
-function supabaseVerifier() {
-  return buildVerifier(
-    resolveConfig({
-      AUTH_PROVIDER: 'supabase',
-      SUPABASE_URL: 'https://issuer.test',
-      SUPABASE_JWT_SECRET: SECRET,
-    }),
-  )
-}
-
 const MINTED = {
   token: 'ct-0123456789abcdefghijABCDEFGHIJklmnopqrstuvw',
   expires_in: 1800,
@@ -74,66 +51,44 @@ function januaryRespondsWith(status, body, capture = {}) {
   }
 }
 
-// ——— provider presets ———————————————————————————————————————————————————————
+// ——— relay-token verification ———————————————————————————————————————————————
 
-test('firebase preset resolves Google keys, issuer and audience from the project id', () => {
-  const config = resolveConfig({ AUTH_PROVIDER: 'firebase', FIREBASE_PROJECT_ID: 'acme-app' })
-  assert.equal(config.issuer, 'https://securetoken.google.com/acme-app')
-  assert.equal(config.audience, 'acme-app')
-  assert.equal(config.userClaim, 'sub')
-  assert.match(config.jwksUrl, /^https:\/\/www\.googleapis\.com\//)
-})
-
-test('a missing provider variable names itself in the error', () => {
-  assert.throws(
-    () => resolveConfig({ AUTH_PROVIDER: 'auth0', AUTH0_DOMAIN: 'acme.us.auth0.com' }),
-    (error) => error instanceof RelayConfigError && /AUTH0_AUDIENCE/.test(error.message),
-  )
-})
-
-test('an unknown provider lists the valid ones', () => {
-  assert.throws(
-    () => resolveConfig({ AUTH_PROVIDER: 'okta' }),
-    (error) => error instanceof RelayConfigError && /firebase, clerk, auth0, supabase, jwt, shared-secret/.test(error.message),
-  )
-})
-
-// ——— session verification (real crypto via the HS256 path) ——————————————————
-
-test('a valid session yields the end user from the verified sub claim', async () => {
-  const session = await hs256Session({ sub: 'supabase-user-9' })
-  const { endUserId } = await supabaseVerifier()({ authorization: `Bearer ${session}` })
-  assert.equal(endUserId, 'supabase-user-9')
-})
-
-test('a tampered session is refused as a SessionError', async () => {
-  const session = await hs256Session({ sub: 'supabase-user-9' })
-  await assert.rejects(
-    supabaseVerifier()({ authorization: `Bearer ${session.slice(0, -2)}xx` }),
-    SessionError,
-  )
-})
-
-test('a session from the wrong issuer is refused', async () => {
-  const session = await hs256Session({ sub: 'u' }, { issuer: 'https://elsewhere.test' })
-  await assert.rejects(supabaseVerifier()({ authorization: `Bearer ${session}` }), SessionError)
-})
-
-test('shared-secret mode checks the secret and requires the user header', async () => {
-  const verify = buildVerifier(
-    resolveConfig({ AUTH_PROVIDER: 'shared-secret', RELAY_SHARED_SECRET: 'beta-window' }),
-  )
+test('the right relay token and a named user pass', async () => {
+  const verify = buildVerifier({ relayToken: 'beta-window' })
   assert.deepEqual(
     await verify({ authorization: 'Bearer beta-window', 'x-end-user-id': 'tester-1' }),
     { endUserId: 'tester-1' },
   )
-  await assert.rejects(verify({ authorization: 'Bearer wrong', 'x-end-user-id': 'tester-1' }), SessionError)
-  await assert.rejects(verify({ authorization: 'Bearer beta-window' }), SessionError)
+})
+
+test('a wrong relay token is refused', async () => {
+  const verify = buildVerifier({ relayToken: 'beta-window' })
+  await assert.rejects(
+    verify({ authorization: 'Bearer wrong', 'x-end-user-id': 'tester-1' }),
+    SessionError,
+  )
+})
+
+test('a missing Authorization header is refused with instructions', async () => {
+  const verify = buildVerifier({ relayToken: 'beta-window' })
+  await assert.rejects(verify({ 'x-end-user-id': 'tester-1' }), /Authorization: Bearer/)
+})
+
+test('a missing x-end-user-id header is refused with instructions', async () => {
+  const verify = buildVerifier({ relayToken: 'beta-window' })
+  await assert.rejects(verify({ authorization: 'Bearer beta-window' }), /x-end-user-id/)
+})
+
+test('user ids are trimmed, so padding cannot create a second identity upstream', async () => {
+  const verify = buildVerifier({ relayToken: 's' })
+  assert.deepEqual(await verify({ authorization: 'Bearer s', 'x-end-user-id': '  u1  ' }), {
+    endUserId: 'u1',
+  })
 })
 
 // ——— the relay handler ——————————————————————————————————————————————————————
 
-test('a verified session mints for exactly that user and relays the 201 verbatim', async () => {
+test('a verified caller mints for exactly the named user and relays the 201 verbatim', async () => {
   const capture = {}
   const handler = createRelayHandler({
     env: { JANUARY_API_KEY: 'sk-x' },
@@ -148,7 +103,6 @@ test('a verified session mints for exactly that user and relays the 201 verbatim
   assert.equal(res.headers['X-Request-Id'], 'req-123')
   assert.equal(capture.url, 'https://partners.january.ai/v1.2/auth/client-tokens')
   assert.equal(capture.init.headers.authorization, 'Bearer sk-x')
-  // The verified identity is the whole body — nothing from the caller reaches it.
   assert.deepEqual(JSON.parse(capture.init.body), { end_user_id: 'user-1' })
 })
 
@@ -168,12 +122,12 @@ test('TOKEN_SCOPES and TOKEN_TTL_SECONDS become relay policy on the mint body', 
   })
 })
 
-test('a failed session is the relay’s own 401 and January is never called', async () => {
+test('a failed check is the relay’s own 401 and January is never called', async () => {
   let called = false
   const handler = createRelayHandler({
     env: { JANUARY_API_KEY: 'sk-x' },
     verify: async () => {
-      throw new SessionError('expired')
+      throw new SessionError('no match')
     },
     fetchImpl: async () => {
       called = true
