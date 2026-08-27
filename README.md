@@ -4,11 +4,29 @@
 ![Node ≥ 20](https://img.shields.io/badge/node-%E2%89%A5%2020-brightgreen)
 ![Runtime dependencies: 0](https://img.shields.io/badge/runtime%20dependencies-0-blue)
 
-The one backend endpoint a January mobile integration needs, deployed in about
-a minute. Your app trades a **relay token** (a secret you invent) for
-short-lived **client tokens**, and your January API key never ships on a phone
-— it lives in Vercel's environment vault and appears only on the
-server-to-server call to January.
+**What this is:** your mobile app needs tokens to call the
+[January Developer API](https://docs.january.ai). Tokens are minted with your
+API key — and your API key must never ship inside an app, where anyone can
+extract it. This relay is the missing middle piece **while you build**: a tiny
+service you deploy to Vercel in about a minute, which holds your key and hands
+your app short-lived tokens, so the full token flow works before your own
+backend endpoint exists.
+
+**Who it's for: development and testing.** You're integrating the January iOS
+or Android SDK and want everything working — local builds, demos, a short
+TestFlight beta — before your backend team builds the real endpoint. **It is
+not a production substitute for your backend:** the relay token proves a
+request came from your app, not *which user* is asking. Before launch, move
+this endpoint into your backend behind your real user authentication
+([how below](#going-to-production-move-the-endpoint-into-your-backend)).
+
+**The three credentials, in plain words:**
+
+| | What it is | Where it lives |
+|---|---|---|
+| **API key** (`sk-…`) | Your account's master key, from the dashboard | Only in Vercel's vault — never in the app |
+| **Relay token** | A password you invent, so only your app can use this relay | In your app; rotate it in Vercel settings any time |
+| **Client token** (`ct-…`) | What the relay hands your app: works for one user, dies within 2 hours | In the app's memory; the SDK refreshes it automatically |
 
 ```mermaid
 sequenceDiagram
@@ -51,10 +69,16 @@ indefinitely.
    - **`RELAY_TOKEN`** — a secret you invent. Make it long and random
      (`openssl rand -base64 32` is perfect). This is the value your app sends
      as the `Authorization: Bearer <RELAY_TOKEN>` header when it asks the relay for a token.
-3. That's it. Your endpoint is live at
+3. That's it. Open `https://<your-project>.vercel.app` in your browser — the
+   status page confirms the relay is up. Your endpoint is
    `https://<your-project>.vercel.app/api/january/client-token`.
 
 ## Try it from a terminal
+
+(Sanity check first, no headers needed: open `https://<your-project>.vercel.app`
+in a browser — the status page checks the endpoint for you and shows the two
+headers. Neither the page nor a plain GET can mint anything; minting always
+requires the POST below.)
 
 ```bash
 curl -X POST 'https://<your-project>.vercel.app/api/january/client-token' \
@@ -101,11 +125,11 @@ contract from there.
 - **The relay token is still a secret in your app**, and whoever holds it can
   request tokens for any user id they name, until you rotate it. The damage is
   bounded — tokens die within 2 hours, minting is rate-limited, and you can
-  revoke any user's tokens from the dashboard — but for an app with real
-  users in production, the right upgrade is to verify your login system's
-  sessions here instead of a static token: one function to swap in this repo
-  (`lib/verify.js`), and the rest of the relay stays identical. Ask us when
-  you get there.
+  revoke any user's tokens from the dashboard — which is acceptable for
+  development and a short beta, and is exactly why this relay is **not for
+  production**. Before launch, move the endpoint into your backend and let
+  your real user authentication decide who can mint
+  ([below](#going-to-production-move-the-endpoint-into-your-backend)).
 - **Errors are January's errors.** The relay adds exactly one of its own
   (`401 invalid_session`). Everything else — client tokens not enabled (403),
   mint rate limit (429) — passes through verbatim with January's `code`, so
@@ -122,13 +146,29 @@ vercel dev        # run the endpoint locally with your .env
 RELAY_E2E_URL=https://<your-project>.vercel.app RELAY_E2E_TOKEN=<your token> npm test
 ```
 
-## Moving off the relay later
+## Going to production: move the endpoint into your backend
 
-Nothing to migrate: the relay speaks the same contract as a token endpoint
-inside your own backend (authenticate the caller → mint → relay verbatim).
-When your backend is ready, implement the same three steps there — deriving
-the user id from your real login session — point the SDK at the new URL, and
-delete the Vercel project.
+The relay exists so you can build before your real endpoint does — retire it
+before launch. Production minting belongs **inside your backend**, protected
+the same way as your other authenticated APIs, so that only your app's
+signed-in users can request tokens:
+
+- **Amazon API Gateway + Cognito** — put the endpoint behind a Cognito
+  authorizer and read the user id from the verified identity token's claims.
+- **Firebase Auth / Auth0 / Clerk / Supabase** — verify the session JWT your
+  login system already gives the app, and take the user id from its verified
+  claims.
+- **Your own sessions** — whatever middleware guards your existing API guards
+  this endpoint too; the request's signed-in user is the user you mint for.
+
+Whichever you use, the endpoint performs the same three steps as this relay —
+authenticate the caller, mint with your `sk-` key, relay January's response
+verbatim — with the one upgrade that makes it production-grade: **the user id
+comes from the verified session, never from a request header.** The developer
+dashboard's *Production setup* card has copy-paste versions for Node, Python,
+and Go. Your app then changes only the URL (and stops sending the relay
+token); the SDK behaves identically. Finally, delete the Vercel project and
+rotate the API key it held.
 
 ---
 
