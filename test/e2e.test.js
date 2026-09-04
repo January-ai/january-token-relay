@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 import { test } from 'node:test'
+import { createLocalServer } from '../lib/local-server.js'
 import { createRelayHandler } from '../lib/relay.js'
 import { buildVerifier } from '../lib/verify.js'
 
@@ -8,22 +9,9 @@ import { buildVerifier } from '../lib/verify.js'
  * End-to-end over real HTTP: a fake January upstream and the relay both listen
  * on local ports, and the client is plain fetch. What the unit tests prove
  * about the handler, this proves about the deployed shape — headers cross a
- * real wire, and the Vercel-style res helpers are exercised on a live socket.
+ * real wire, and the relay is served exactly as `npm start` serves it, so the
+ * local server's Vercel-style res helpers are exercised on a live socket.
  */
-
-/** Minimal stand-in for the helpers Vercel adds to Node's response object. */
-function vercelify(res) {
-  res.status = (code) => {
-    res.statusCode = code
-    return res
-  }
-  res.json = (body) => {
-    res.setHeader('content-type', 'application/json')
-    res.end(JSON.stringify(body))
-    return res
-  }
-  return res
-}
 
 function listen(server) {
   return new Promise((resolve) =>
@@ -64,12 +52,7 @@ async function startStack() {
     },
     verify: buildVerifier({ relayToken: 'e2e-relay-token' }),
   })
-  const relay = createServer((req, res) => {
-    handler(req, vercelify(res)).catch(() => {
-      res.writeHead(500)
-      res.end()
-    })
-  })
+  const relay = createLocalServer({ handler, indexHtml: '<h1>January Token Relay</h1>' })
   const relayPort = await listen(relay)
 
   return {
@@ -98,7 +81,9 @@ test('e2e: a real HTTP round trip mints and relays verbatim, with the request id
     const [mint] = stack.upstreamRequests
     assert.equal(mint.url, '/v1.2/auth/client-tokens')
     assert.match(mint.authorization, /^Bearer sk-/)
-    assert.deepEqual(JSON.parse(mint.body), { end_user_id: 'e2e-user-1' })
+    const body = JSON.parse(mint.body)
+    assert.equal(body.end_user_id, 'e2e-user-1')
+    assert.ok(body.scopes.length > 0, 'January requires scopes on every mint')
   } finally {
     stack.close()
   }
