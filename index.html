@@ -32,7 +32,7 @@ into your backend. See the
 <div class="block"><button type="button" class="copy" data-copy="mint">Copy</button><pre><code id="mint">curl -X POST 'https://&lt;your-project&gt;.vercel.app/api/january/client-token' \
   -H 'Authorization: Bearer &lt;your RELAY_TOKEN&gt;' \
   -H 'x-end-user-id: demo-user-1'</code></pre></div>
-<p class="hint">Replace <b>&lt;your RELAY_TOKEN&gt;</b> with the relay token you set at deploy.
+<p class="hint" id="mint-hint">Replace <b>&lt;your RELAY_TOKEN&gt;</b> with the relay token you set in <code>.env</code> or at deploy.
 The user id can be anything — the token is minted for that user.</p>
 
 <h2>2&nbsp;·&nbsp;Use it — search for greek yogurt</h2>
@@ -69,10 +69,17 @@ just mint another.</p>
 
   fetch('/api/january/client-token')
     .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
-    .then(() => {
+    .then((info) => {
       const s = document.getElementById('status')
       s.textContent = 'endpoint is up ✓'
       s.className = 'ok'
+      // On your own machine no relay token is needed, so don't ask for one.
+      if (info.relay_token_required === false) {
+        const mint = document.getElementById('mint')
+        mint.textContent = mint.textContent.replace(/\n\s*-H 'Authorization: Bearer <your RELAY_TOKEN>' \\/, '')
+        document.getElementById('mint-hint').textContent =
+          'No relay token is needed here: nothing outside this machine can reach the relay. The user id can be anything — the token is minted for that user.'
+      }
     })
     .catch(() => {
       const s = document.getElementById('status')
