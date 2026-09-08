@@ -172,9 +172,10 @@ curl 'https://partners.january.ai/v1.2/foods?query=greek+yogurt&limit=3' \
 
 Every January SDK takes a **token provider**: a small function you write that
 calls your token endpoint and returns the SDK's client-token value. Point it at
-the relay with a `POST` carrying `January-End-User-ID: <your id for the user>` — plus
-`Authorization: Bearer <RELAY_TOKEN>` once the relay is on Vercel or your
-Wi-Fi. iOS, Android, and Web accept the relay's `expires_in` field directly;
+the relay with a `POST` carrying `January-End-User-ID: <your id for the user>`.
+Once the relay is on Vercel or your Wi-Fi, also send
+`Authorization: Bearer <RELAY_TOKEN>`. iOS, Android, and Web accept the relay's
+`expires_in` field directly;
 the React Native demo maps it to `expiresIn`. Each guide shows where the
 provider goes:
 [iOS](https://docs.january.ai/ios-sdk/getting-started/authentication),

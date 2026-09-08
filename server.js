@@ -115,9 +115,7 @@ server.listen(port, host, () => {
     `  API key       ${keyStatus}`,
     `  Status page   ${link(local)}`,
     `  Endpoint      ${link(endpoint)}`,
-    ...(isLoopback(host)
-      ? [`  Android       ${link(`http://10.0.2.2:${port}${ENDPOINT_PATH}`)}   (emulator)`]
-      : []),
+    `  Android       ${link(`http://10.0.2.2:${port}${ENDPOINT_PATH}`)}   (emulator)`,
     ...lan.map(
       (url) => `  On your Wi-Fi ${link(`${url}${ENDPOINT_PATH}`)}   (for a physical phone)`,
     ),
