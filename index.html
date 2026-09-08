@@ -31,7 +31,7 @@ into your backend. See the
 <h2>1&nbsp;·&nbsp;Mint a client token</h2>
 <div class="block"><button type="button" class="copy" data-copy="mint">Copy</button><pre><code id="mint">curl -X POST 'https://&lt;your-project&gt;.vercel.app/api/january/client-token' \
   -H 'Authorization: Bearer &lt;your RELAY_TOKEN&gt;' \
-  -H 'x-end-user-id: demo-user-1'</code></pre></div>
+  -H 'January-End-User-ID: demo-user-1'</code></pre></div>
 <p class="hint" id="mint-hint">Replace <b>&lt;your RELAY_TOKEN&gt;</b> with the relay token you set in <code>.env</code> or at deploy.
 The user id can be anything — the token is minted for that user.</p>
 

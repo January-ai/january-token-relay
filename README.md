@@ -50,7 +50,7 @@ sequenceDiagram
 
     Note over Relay: holds your sk-… key<br/>(never on the phone)
 
-    App->>+Relay: POST /api/january/client-token<br/>x-end-user-id (+ relay token once deployed)
+    App->>+Relay: POST /api/january/client-token<br/>January-End-User-ID (+ relay token once deployed)
     Relay->>+January: mint client token<br/>sk-… + end_user_id
     January-->>-Relay: ct-… client token (expires ≤ 2 h)
     Relay-->>-App: relayed verbatim
@@ -67,12 +67,18 @@ The relay is one stateless function with no dependencies. It is called about
 once per user per half hour (token refresh), so Vercel's free tier holds
 indefinitely.
 
-## Run it locally
+## Quick start: run it locally
 
 The relay runs on your own machine with Node 20.12 or newer and nothing to
-install. It needs the same two things as a deploy: an API key, and **Client
-tokens** enabled in the [developer dashboard](https://dashboard.january.ai)
-(Client tokens → Enable — minting answers `403` until it is).
+install. Complete these setup steps first; the two dashboard actions are on
+different pages:
+
+1. [Sign up](https://dashboard.january.ai/sign-up) or
+   [sign in](https://dashboard.january.ai/sign-in), open **API keys → Create
+   key**, and copy the full `sk-…` value when it is shown.
+2. Open [Client tokens](https://dashboard.january.ai/dashboard/client-tokens)
+   and select **Enable client tokens**. Minting returns `403` until this is on.
+3. Run the relay:
 
 ```bash
 git clone https://github.com/January-ai/january-token-relay.git
@@ -80,8 +86,8 @@ cd january-token-relay
 ./start.sh
 ```
 
-The script checks your Node version, asks for your API key (and says where to
-create one), confirms the key with January before saving it to a private
+The script checks your Node version, asks for the API key, confirms it with
+January before saving it to a private
 `.env`, and starts the relay. When it's up it prints the endpoint to point
 your app at, the exact request to make, and each SDK's guide for writing the
 token provider. Run it again any time; with a working `.env` it skips straight
@@ -114,13 +120,18 @@ git-ignored, and variables already set in your shell take precedence over it.
   to an IP address unless your app's `Info.plist` sets
   `NSAllowsLocalNetworking` to `YES` (the January demo app already does).
 
-## Deploy
+## Optional: deploy to Vercel
+
+Deploying is useful when a simulator, physical device, or teammate cannot
+reach your localhost relay. This remains a **development and testing setup**,
+not a production authentication system. Before launch, move token minting into
+your authenticated backend as described below.
 
 > **Before you start:** enable **Client tokens** for your account
 > (developer dashboard → Client tokens → Enable). Minting is refused with a
 > `403` until that toggle is on — the relay will faithfully relay that answer.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FJanuary-ai%2Fjanuary-token-relay&env=JANUARY_API_KEY,RELAY_TOKEN&envDescription=JANUARY_API_KEY%3A%20your%20sk-...%20key%20from%20dashboard.january.ai.%20RELAY_TOKEN%3A%20any%20long%20random%20secret%20you%20invent%20-%20your%20app%20sends%20it%20as%20the%20Bearer%20token%20on%20every%20request%20to%20this%20relay.%20Test%20after%20deploy%3A%20curl%20-X%20POST%20https%3A%2F%2FYOUR-PROJECT.vercel.app%2Fapi%2Fjanuary%2Fclient-token%20-H%20'Authorization%3A%20Bearer%20YOUR_RELAY_TOKEN'%20-H%20'x-end-user-id%3A%20demo-user-1'&envLink=https%3A%2F%2Fgithub.com%2FJanuary-ai%2Fjanuary-token-relay%23try-it-from-a-terminal&project-name=january-token-relay&repository-name=january-token-relay)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FJanuary-ai%2Fjanuary-token-relay&env=JANUARY_API_KEY,RELAY_TOKEN&envDescription=JANUARY_API_KEY%3A%20your%20sk-...%20key%20from%20dashboard.january.ai.%20RELAY_TOKEN%3A%20any%20long%20random%20secret%20you%20invent%20-%20your%20app%20sends%20it%20as%20the%20Bearer%20token%20on%20every%20request%20to%20this%20relay.%20Test%20after%20deploy%3A%20curl%20-X%20POST%20https%3A%2F%2FYOUR-PROJECT.vercel.app%2Fapi%2Fjanuary%2Fclient-token%20-H%20'Authorization%3A%20Bearer%20YOUR_RELAY_TOKEN'%20-H%20'January-End-User-ID%3A%20demo-user-1'&envLink=https%3A%2F%2Fgithub.com%2FJanuary-ai%2Fjanuary-token-relay%23try-it-from-a-terminal&project-name=january-token-relay&repository-name=january-token-relay)
 
 1. Click the button. Vercel asks where to create your copy of this repo —
    pick your GitHub account (the **Create** button stays disabled until you do).
@@ -138,7 +149,7 @@ git-ignored, and variables already set in your shell take precedence over it.
 
 ```bash
 curl -X POST 'http://localhost:8787/api/january/client-token' \
-  -H 'x-end-user-id: smoke-test-1'
+  -H 'January-End-User-ID: smoke-test-1'
 ```
 
 For a deployed relay, use `https://<your-project>.vercel.app` and add
@@ -161,7 +172,7 @@ curl 'https://partners.january.ai/v1.2/foods?query=greek+yogurt&limit=3' \
 
 Every January SDK takes a **token provider**: a small function you write that
 calls your token endpoint and returns the SDK's client-token value. Point it at
-the relay with a `POST` carrying `x-end-user-id: <your id for the user>` — plus
+the relay with a `POST` carrying `January-End-User-ID: <your id for the user>` — plus
 `Authorization: Bearer <RELAY_TOKEN>` once the relay is on Vercel or your
 Wi-Fi. iOS, Android, and Web accept the relay's `expires_in` field directly;
 the React Native demo maps it to `expiresIn`. Each guide shows where the
@@ -184,7 +195,7 @@ let january = try JanuaryClient(
     clientTokenProvider: { endUserID in
         var request = URLRequest(url: tokenEndpoint)
         request.httpMethod = "POST"
-        request.setValue(endUserID, forHTTPHeaderField: "x-end-user-id")
+        request.setValue(endUserID, forHTTPHeaderField: "January-End-User-ID")
         // Once the relay is on Vercel or your Wi-Fi, it needs its relay token too:
         // request.setValue("Bearer \(relayToken)", forHTTPHeaderField: "Authorization")
         let (data, _) = try await URLSession.shared.data(for: request)
@@ -203,7 +214,7 @@ short-lived `ct-…` token.
 The URL itself doesn't matter — any path on any host works, including your own
 backend later. What matters is the successful response shape: January's mint
 response, verbatim. When moving to production, change the relay URL and replace
-the development-only `x-end-user-id`/relay-token headers with the normal app
+the development-only `January-End-User-ID`/relay-token headers with the normal app
 session your backend verifies.
 
 ## What this protects — and what it doesn't

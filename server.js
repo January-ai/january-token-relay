@@ -126,13 +126,13 @@ server.listen(port, host, () => {
     '',
     `  POST ${endpoint}`,
     ...(relayToken ? ['  Authorization: Bearer <RELAY_TOKEN>      the value in .env'] : []),
-    '  x-end-user-id: <your id for the signed-in user>',
+    '  January-End-User-ID: <your id for the signed-in user>',
     '',
     relayToken
       ? 'The relay token keeps this relay yours alone. It lives in .env as RELAY_TOKEN.'
       : 'No relay token is needed here: nothing outside this machine can reach the relay.',
     '',
-    `Try it:  curl -X POST ${endpoint}${relayToken ? " -H 'Authorization: Bearer <RELAY_TOKEN>'" : ''} -H 'x-end-user-id: demo-user-1'`,
+    `Try it:  curl -X POST ${endpoint}${relayToken ? " -H 'Authorization: Bearer <RELAY_TOKEN>'" : ''} -H 'January-End-User-ID: demo-user-1'`,
     '',
     'Writing the provider, per SDK:',
     ...SDK_GUIDES.map(([name, url]) => `  ${name.padEnd(13)} ${link(url)}`),

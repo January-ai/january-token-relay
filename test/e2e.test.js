@@ -70,7 +70,7 @@ test('e2e: a real HTTP round trip mints and relays verbatim, with the request id
   try {
     const res = await fetch(stack.url, {
       method: 'POST',
-      headers: { authorization: 'Bearer e2e-relay-token', 'x-end-user-id': 'e2e-user-1' },
+      headers: { authorization: 'Bearer e2e-relay-token', 'January-End-User-ID': 'e2e-user-1' },
     })
 
     assert.equal(res.status, 201)
@@ -94,7 +94,7 @@ test('e2e: a wrong relay token is refused over the wire and the upstream never h
   try {
     const res = await fetch(stack.url, {
       method: 'POST',
-      headers: { authorization: 'Bearer wrong', 'x-end-user-id': 'e2e-user-1' },
+      headers: { authorization: 'Bearer wrong', 'January-End-User-ID': 'e2e-user-1' },
     })
 
     assert.equal(res.status, 401)
@@ -133,7 +133,7 @@ test('e2e (live): a deployed relay mints a real client token', {
     method: 'POST',
     headers: {
       authorization: `Bearer ${process.env.RELAY_E2E_TOKEN}`,
-      'x-end-user-id': 'relay-live-e2e',
+      'January-End-User-ID': 'relay-live-e2e',
     },
   })
 

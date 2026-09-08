@@ -104,13 +104,13 @@ test('the endpoint path reaches the handler with Vercel’s res.status().json() 
   await withServer(
     async (req, res) => {
       seen.method = req.method
-      seen.userId = req.headers['x-end-user-id']
+      seen.userId = req.headers['january-end-user-id']
       return res.status(201).json({ token: 'ct-test' })
     },
     async (origin) => {
       const res = await fetch(`${origin}/api/january/client-token?ignored=1`, {
         method: 'POST',
-        headers: { 'x-end-user-id': 'u1' },
+        headers: { 'January-End-User-ID': 'u1' },
       })
       assert.equal(res.status, 201)
       assert.match(res.headers.get('content-type'), /application\/json/)
