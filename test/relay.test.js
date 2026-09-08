@@ -56,7 +56,7 @@ function januaryRespondsWith(status, body, capture = {}) {
 test('the right relay token and a named user pass', async () => {
   const verify = buildVerifier({ relayToken: 'beta-window' })
   assert.deepEqual(
-    await verify({ authorization: 'Bearer beta-window', 'x-end-user-id': 'tester-1' }),
+    await verify({ authorization: 'Bearer beta-window', 'january-end-user-id': 'tester-1' }),
     { endUserId: 'tester-1' },
   )
 })
@@ -64,24 +64,32 @@ test('the right relay token and a named user pass', async () => {
 test('a wrong relay token is refused', async () => {
   const verify = buildVerifier({ relayToken: 'beta-window' })
   await assert.rejects(
-    verify({ authorization: 'Bearer wrong', 'x-end-user-id': 'tester-1' }),
+    verify({ authorization: 'Bearer wrong', 'january-end-user-id': 'tester-1' }),
     SessionError,
   )
 })
 
 test('a missing Authorization header is refused with instructions', async () => {
   const verify = buildVerifier({ relayToken: 'beta-window' })
-  await assert.rejects(verify({ 'x-end-user-id': 'tester-1' }), /Authorization: Bearer/)
+  await assert.rejects(verify({ 'january-end-user-id': 'tester-1' }), /Authorization: Bearer/)
 })
 
-test('a missing x-end-user-id header is refused with instructions', async () => {
+test('a missing January-End-User-ID header is refused with instructions', async () => {
   const verify = buildVerifier({ relayToken: 'beta-window' })
-  await assert.rejects(verify({ authorization: 'Bearer beta-window' }), /x-end-user-id/)
+  await assert.rejects(verify({ authorization: 'Bearer beta-window' }), /January-End-User-ID/)
+})
+
+test('the retired x-end-user-id header is not accepted', async () => {
+  const verify = buildVerifier({ relayToken: 'beta-window' })
+  await assert.rejects(
+    verify({ authorization: 'Bearer beta-window', 'x-end-user-id': 'tester-1' }),
+    /January-End-User-ID/,
+  )
 })
 
 test('user ids are trimmed, so padding cannot create a second identity upstream', async () => {
   const verify = buildVerifier({ relayToken: 's' })
-  assert.deepEqual(await verify({ authorization: 'Bearer s', 'x-end-user-id': '  u1  ' }), {
+  assert.deepEqual(await verify({ authorization: 'Bearer s', 'january-end-user-id': '  u1  ' }), {
     endUserId: 'u1',
   })
 })
@@ -89,14 +97,14 @@ test('user ids are trimmed, so padding cannot create a second identity upstream'
 test('without a relay token the verifier is open: no Authorization needed, a user still is', async () => {
   const verify = buildVerifier({})
   assert.equal(verify.relayTokenRequired, false)
-  assert.deepEqual(await verify({ 'x-end-user-id': 'tester-1' }), { endUserId: 'tester-1' })
+  assert.deepEqual(await verify({ 'january-end-user-id': 'tester-1' }), { endUserId: 'tester-1' })
   assert.deepEqual(
-    await verify({ authorization: 'Bearer anything', 'x-end-user-id': 'tester-1' }),
+    await verify({ authorization: 'Bearer anything', 'january-end-user-id': 'tester-1' }),
     {
       endUserId: 'tester-1',
     },
   )
-  await assert.rejects(verify({}), /x-end-user-id/)
+  await assert.rejects(verify({}), /January-End-User-ID/)
 })
 
 test('with a relay token the verifier says so, for the usage answer', () => {
@@ -314,7 +322,7 @@ test('GET answers with usage and never touches the upstream — a browser visit 
   assert.equal(res.body.status, 'ok')
   assert.equal(res.body.relay_token_required, true)
   assert.match(res.body.usage, /Authorization: Bearer/)
-  assert.match(res.body.usage, /x-end-user-id/)
+  assert.match(res.body.usage, /January-End-User-ID/)
 })
 
 test('GET tells an open relay’s callers they need only the user header', async () => {
@@ -328,7 +336,7 @@ test('GET tells an open relay’s callers they need only the user header', async
 
   assert.equal(res.body.relay_token_required, false)
   assert.doesNotMatch(res.body.usage, /Authorization/)
-  assert.match(res.body.usage, /x-end-user-id/)
+  assert.match(res.body.usage, /January-End-User-ID/)
 })
 
 test('non-POST methods are refused; OPTIONS preflight succeeds for an allowed origin', async () => {

@@ -131,7 +131,7 @@ test('start.sh: a fresh clone — the pasted key lands in .env, no relay token i
     )
     assert.equal(statSync(join(dir, '.env')).mode & 0o777, 0o600, '.env is private to the user')
     assert.match(run.out, /Endpoint +http:\/\/localhost:\d+\/api\/january\/client-token/)
-    assert.match(run.out, /x-end-user-id/)
+    assert.match(run.out, /January-End-User-ID/)
     assert.doesNotMatch(
       run.out,
       /Authorization/,
