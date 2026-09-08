@@ -111,7 +111,8 @@ git-ignored, and variables already set in your shell take precedence over it.
   to `localhost` by default.
 - **Android Emulator** — use
   `http://10.0.2.2:8787/api/january/client-token`; `10.0.2.2` maps to the
-  development machine's loopback interface.
+  development machine's loopback interface. If you set `PORT`, replace `8787`
+  with the port printed by the relay.
 - **A physical iPhone** — start the relay with `HOST=0.0.0.0 ./start.sh`.
   Other devices on your Wi-Fi can now reach the relay, so the script generates
   a relay token for it (your app sends it as `Authorization: Bearer …`) and
