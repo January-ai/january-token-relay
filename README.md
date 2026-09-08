@@ -120,6 +120,8 @@ git-ignored, and variables already set in your shell take precedence over it.
   to an IP address unless your app's `Info.plist` sets
   `NSAllowsLocalNetworking` to `YES` (the January demo app already does).
 
+<a id="deploy"></a>
+
 ## Optional: deploy to Vercel
 
 Deploying is useful when a simulator, physical device, or teammate cannot
