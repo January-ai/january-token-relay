@@ -70,29 +70,61 @@ indefinitely.
 ## Quick start: run it locally
 
 The relay runs on your own machine with Node 20.12 or newer and nothing to
-install. Complete these setup steps first; the two dashboard actions are on
-different pages:
+install. This is the same sequence every January client SDK README uses as its
+Terminal 1.
 
-1. [Sign up](https://dashboard.january.ai/sign-up) or
-   [sign in](https://dashboard.january.ai/sign-in), open **API keys → Create
-   key**, and copy the full `sk-…` value when it is shown.
-2. Open [Client tokens](https://dashboard.january.ai/dashboard/client-tokens)
-   and select **Enable client tokens**. Minting returns `403` until this is on.
-3. Run the relay:
+1. Open a terminal.
+2. Download the relay and move into its folder:
 
-```bash
-git clone https://github.com/January-ai/january-token-relay.git
-cd january-token-relay
-./start.sh
-```
+   ```bash
+   git clone https://github.com/January-ai/january-token-relay.git
+   cd january-token-relay
+   ```
 
-The script checks your Node version, asks for the API key, confirms it with
-January before saving it to a private
-`.env`, and starts the relay. When it's up it prints the endpoint to point
-your app at, the exact request to make, and each SDK's guide for writing the
-token provider. Run it again any time; with a working `.env` it skips straight
-to starting, and if the saved key has since been rotated it asks for a new
-one. On Windows, run it from Git Bash, or take the manual route:
+3. Start it:
+
+   ```bash
+   ./start.sh
+   ```
+
+   It checks your Node version and then asks
+   `Paste your API key (input is hidden):`. Leave it waiting and create the
+   key in the next two steps.
+
+4. Create the API key. In a browser,
+   [sign up](https://dashboard.january.ai/sign-up) or
+   [sign in](https://dashboard.january.ai/sign-in) to the January Developer
+   Dashboard, open **API keys → Create key**, and copy the full `sk-…` value.
+   It is shown once.
+5. Enable client tokens. Open
+   [Client tokens](https://dashboard.january.ai/dashboard/client-tokens) and
+   switch on **Enable client tokens**. Until this is on, minting returns `403`.
+6. Back in the terminal, paste the key and press Enter. Nothing appears while
+   you type. The script confirms the key with January before saving it to a
+   private `.env`, then starts the relay and prints the endpoint to point your
+   app at, the exact request to make, and each SDK's guide for writing the
+   token provider:
+
+   ```text
+   ✓ API key accepted by January (sk-abcd…wxyz)
+   ✓ Saved to .env (readable only by you; git ignores it)
+
+   January Token Relay is running on this machine (development only).
+     Endpoint      http://localhost:8787/api/january/client-token
+   ```
+
+   Leave this window open. Run `./start.sh` again any time; with a working
+   `.env` it skips straight to starting, and if the saved key has since been
+   rotated it asks for a new one.
+
+7. In a second terminal, run the demo for your SDK: the quick start in each
+   SDK README continues from here
+   ([React Native](https://github.com/January-ai/january-sdk-react-native#quick-start-run-the-demo-with-client-tokens),
+   [iOS](https://github.com/January-ai/january-sdk-ios#quick-start-run-the-demo-with-client-tokens),
+   [Android](https://github.com/January-ai/january-sdk-android#quick-start-run-the-demo-with-client-tokens),
+   [Web](https://github.com/January-ai/january-sdk-web#quick-start-run-the-demo-with-client-tokens)).
+
+On Windows, run it from Git Bash, or take the manual route:
 
 ```bash
 cp .env.example .env    # then paste your JANUARY_API_KEY
