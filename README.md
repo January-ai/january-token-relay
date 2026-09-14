@@ -103,7 +103,10 @@ Terminal 1.
    you type. The script confirms the key with January before saving it to a
    private `.env`, then starts the relay and prints the endpoint to point your
    app at, the exact request to make, and each SDK's guide for writing the
-   token provider:
+   token provider. If January cannot be reached at that moment, the key is
+   saved unverified and the output says so
+   (`could not be checked with January right now`); the first token request
+   then shows whether the key is good:
 
    ```text
    ✓ API key accepted by January (sk-abcd…wxyz)
