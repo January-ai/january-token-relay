@@ -147,6 +147,10 @@ test('with TOKEN_SCOPES unset every scope is requested, because January requires
     'food_logs:write',
     'glucose:read',
     'restaurants:read',
+    'water_logs:read',
+    'water_logs:write',
+    'weight_logs:read',
+    'weight_logs:write',
   ])
 })
 
